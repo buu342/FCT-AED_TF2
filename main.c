@@ -1,29 +1,22 @@
 #include <stdio.h>
 #include <ctype.h>
-
-/*===================================
-            Definitions
-===================================*/
-
-#define MAX_INPUT       140
-#define MAX_TRAMPOLINES 500
-#define MAX_STOCK       3000
-
+#include "configuration.h"
+#include "pavillion.h"
 
 /*===================================
             Prototypes
 ===================================*/
 
-void commandline();
-void docommand_E();
-void docommand_F();
+void commandline(pavillion p);
+void docommand_E(char* command);
+void docommand_F(int* num_tax);
 void docommand_L();
-void docommand_T();
+void docommand_T(); // Trampolim vazio.\n
 void docommand_S();
 void docommand_V();
 void docommand_Q();
 void docommand_C();
-void docommand_P();
+void docommand_P(); // fila de trampolins
 void docommand_X();
 
 
@@ -33,28 +26,74 @@ void docommand_X();
 
 int main()
 {
-    commandline();
+    // Variables
+    char command[MAX_INPUT];
+    int num_trampolines;
+
+    if (!DEBUG_MODE)
+    {
+        // Fill the variables with input
+        fgets(command, MAX_INPUT, stdin);
+        sscanf(command,"%d",&num_trampolines);
+    }
+    else
+        num_trampolines = 4;
+
+    // Create our pavillion and go to the command line
+    pavillion p = create_pavillion(num_trampolines);
+    if (p != NULL)
+        commandline(p);
+
+    // If we exit the command line, free the memory
+    destroy_pavillion(p);
     return 0;
 }
 
 
 /*===================================
-            commandline
+            docommand_E
+    Add a person to the pavillion
 ===================================*/
 
-void commandline()
+void docommand_E(char* command)
 {
-    char s[MAX_INPUT] = "\0"; // Command to read.
+    // Variables
+    int num_id = 64, num_tax = 64;
+    char name[MAX_INPUT] = "John Doe";
+
+    if (!DEBUG_MODE)
+    {
+        // Read and ask for information
+        sscanf(command, "E %d %d", &num_tax, &num_id);
+        fgets(name, MAX_INPUT, stdin);
+    }
+
+    // Add the client to the pavillion
+    if (pavillion_add_client(num_id, num_tax, name) == 1)
+        printf("Entrada autorizada\n");
+    else
+        printf("Visitante ja no pavilhao\n");
+}
+
+
+/*===================================
+            commandline
+    Read commands from the user
+===================================*/
+
+void commandline(pavillion p)
+{
+    char command[MAX_INPUT]; // Command to read.
     
     // Read commands until the heat death of the universe.
     while (1) 
     {
         // Get a string from user input
-        fgets(s, 140, stdin); 
+        fgets(command, MAX_INPUT, stdin); 
         
-        switch(toupper(s[0]))
+        switch(toupper(command[0]))
         {
-            case 'E': break;
+            case 'E': docommand_E(command); break;
             case 'F': break;
             case 'L': break;
             case 'T': break;
