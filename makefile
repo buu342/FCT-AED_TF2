@@ -1,5 +1,5 @@
 PROGRAM			= pavilion
-CODEFILES 		= main.c
+CODEFILES 		= main.c client.c
 
 CODEOBJECTS		= $(CODEFILES:.c=.o)
 
