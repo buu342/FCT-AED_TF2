@@ -11,5 +11,7 @@
 	int		get_time(client c);
 	int		get_bill(client c);
 	void*	get_location(client c);
+	void	set_locatio(client c, void* localtion);
+	int	add_to_bill(client c);
 
 #endif
