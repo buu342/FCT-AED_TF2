@@ -124,3 +124,34 @@ void* get_location(client c)
 {
 	return(c->location);
 }
+
+/*===================================
+            set_locatio
+ Set's a new location for the client
+         in the pavillion
+===================================*/
+
+void set_locatio(client c, void* localtion)
+{
+	c->location = location;
+}
+
+/*===================================
+            add_to_bill
+increases the client bill acording to
+     his stay in the trampolins
+===================================*/
+
+int add_to_bill(client c)
+{
+	const int PAY_PERIOD = 30;
+	const int PAY_PER_PERIOD = 5;
+	int h, m, t, total_periods;
+	scanf(" %d %d", h, m);
+	t = h*60 + m - c->time;
+	if(t%PAY_PERIOD)
+		t = t + (PAY_PERIOD - t%PAY_PERIOD);	// round_up
+	total_periods = t/30;
+	c->bill = c->bill + total_periods*PAY_PER_PERIOD;
+	c->time = 0;	// reset time in trampolines		
+}
