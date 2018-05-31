@@ -61,7 +61,7 @@ void client_destroy(client c)
 
 void client_destroy_all(void* c)
 {
-  client_destroy((client) c);
+    client_destroy((client) c);
 }
 
 /*===================================
@@ -115,7 +115,7 @@ void client_set_time(client c, int time)
       Return the client's bill
 ===================================*/
 
-int client_get_bill(client c)
+float client_get_bill(client c)
 {
     return c->bill;
 }
@@ -126,7 +126,7 @@ int client_get_bill(client c)
         Set the client's bill
 ===================================*/
 
-void client_set_bill(client c, int bill)
+void client_set_bill(client c, float bill)
 {
     c->bill = bill;
 }
