@@ -28,4 +28,6 @@
     #define LOCATION_TRAMPOLINES    'T'
     #define LOCATION_BAR            'B'
 
+    #define max(a,b) ((a)>(b) ? a:b)
+
 #endif
