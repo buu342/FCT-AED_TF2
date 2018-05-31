@@ -1,5 +1,5 @@
-PROGRAM			= pavillion
-CODEFILES 		= main.c pavillion.c client.c 
+PROGRAM			= pavilion
+CODEFILES 		= main.c client.c food.c pavilion.c
 
 ADTS			= $(ADT_ITERATOR) $(ADT_DICTIONARY) $(ADT_SEQUENCE) $(ADT_QUEUE)
 ADT_ITERATOR	= iteraVector.c
