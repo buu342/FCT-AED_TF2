@@ -1,15 +1,20 @@
-#ifndef _CLIENT
-#define _CLIENT
+#ifndef _H_CLIENT
+#define _H_CLIENT
 
-	typedef struct _client * client;
+    typedef struct _client * client;
 
-	client	create_client(int num_id, int num_tax, char* name);
-	int		destroy_client(client c);
-	void	set_time(client c, int t);
-	void	set_bill(client c, int cash);
-	char*	get_name(client c);
-	int		get_time(client c);
-	int		get_bill(client c);
-	void*	get_location(client c);
+    client  client_create(char* name, int num_tax);
+    void    client_destroy(client c);
+    void    client_destroy_all(void* c);
+
+    char*   client_get_name(client c);
+    int     client_get_num_tax(client c);
+    int     client_get_time(client c);
+    int     client_get_bill(client c);
+    char    client_get_location(client c);
+
+    void    client_set_time(client c, int time);
+    void    client_set_bill(client c, int bill);
+    void    client_set_location(client c, char location);
 
 #endif

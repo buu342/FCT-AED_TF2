@@ -1,126 +1,154 @@
 #include <stdlib.h>
+#include "configuration.h"
 #include "client.h"
 
 
 /*===================================
-           global variables
+           Global Variables
 ===================================*/
 
 struct _client
 {
     char*   name;
-    void*   location;
-    int     num_id;
-	int     num_tax;
+    int     num_tax;
     int     time;
     float   bill;
+    char    location;
 };
 
 
 /*===================================
-           create_client
-  Allocate memory for a new client
+           client_create
+Allocate memory for a new client and
+            return him
 ===================================*/
 
-client create_client(int num_id, int num_tax, char* name)
+client client_create(char* name, int num_tax)
 {
-    // Allocate memory
-	client c = (client) malloc(sizeof(struct _client));
+    // Allocate memory for the client
+    client c = (client) malloc(sizeof(struct _client));
 
-    // Check if not null
-    if (c == NULL)
+    // Make sure we managed to allocate memory.
+    if (c == NULL) 
         return NULL;
 
-    // Set all the necissary variables.
+    // Set the variables and return him
     c->name = name;
-    c->num_id = num_id;
     c->num_tax = num_tax;
-    c->location = NULL; // ***********************************CHANGE ME TO ENTER THE BAR
     c->time = 0;
-    c->bill = 0;
-	
+    c->bill = 0.0;
+    c->location = LOCATION_BAR;
+
     return c;
 }
 
 
 /*===================================
-           destroy_client
- Free the memory associated with the
-               client
+           client_destroy
+  Free memory occupied by a client
 ===================================*/
 
-int destroy_client(client c)
+void client_destroy(client c)
 {
-	int bill = c->bill;
-	free(c);
-	return bill;
+    free(c);
 }
 
 
 /*===================================
-             set_time
- Set the time the client entered the 
-            trampoline
+         client_destroy_all
+ Free memory occupied by all clients
 ===================================*/
 
-void set_time(client c, int t)
+void client_destroy_all(void* c)
 {
-	c->time = t;
+  client_destroy((client) c);
+}
+
+/*===================================
+           client_get_name
+      Return the client's name
+===================================*/
+
+char* client_get_name(client c)
+{
+    return c->name;
 }
 
 
 /*===================================
-             set_bill
-     Set the the clients' bill
+         client_get_num_tax
+    Return the client's tax number
 ===================================*/
 
-void set_bill(client c, int cash)
+int client_get_num_tax(client c)
 {
-	c->bill = cash;
+    return c->num_tax;
 }
 
 
 /*===================================
-             get_name
-      Get the clients' name
+           client_get_time
+Return the client's time of entry to
+       a trampoline (in minutes)
 ===================================*/
 
-char* get_name(client c)
+int client_get_time(client c)
 {
-	return(c->name);
+    return c->time;
 }
 
 
 /*===================================
-             get_time
- Get the time the client entered the 
-            trampoline
+           client_set_time
+ Set the client's time of entry to a
+       trampoline (in minutes)
 ===================================*/
 
-int get_time(client c)
+void client_set_time(client c, int time)
 {
-	return(c->time);
+    c->time = time;
 }
 
 
 /*===================================
-             get_bill
-      Get the clients' bill
+           client_get_bill
+      Return the client's bill
 ===================================*/
 
-int	get_bill(client c)
+int client_get_bill(client c)
 {
-	return(c->bill);
+    return c->bill;
 }
 
 
 /*===================================
-            get_location
-Get the clients' current location in
-           the pavillion
+           client_set_bill
+        Set the client's bill
 ===================================*/
 
-void* get_location(client c)
+void client_set_bill(client c, int bill)
 {
-	return(c->location);
+    c->bill = bill;
+}
+
+
+/*===================================
+         client_get_location
+    Return the client's location
+===================================*/
+
+char client_get_location(client c)
+{
+    return c->location;
+}
+
+
+/*===================================
+         client_set_location
+      Set the client's location
+===================================*/
+
+void client_set_location(client c, char location)
+{
+    c->location = location;
 }
