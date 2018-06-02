@@ -124,7 +124,7 @@ char food_get_key_from_index(int index)
 
 
 /*===================================
-       food_get_key_from_index              
+       food_get_name_from_index              
   Return the name from an index (for 
               for loops)
 ===================================*/
