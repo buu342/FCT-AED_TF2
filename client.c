@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "configuration.h"
 #include "client.h"
 
@@ -33,7 +34,8 @@ client client_create(char* name, int num_tax)
         return NULL;
 
     // Set the variables and return him
-    c->name = name;
+    c->name = (char*) malloc(sizeof(char)*strlen(name)+1);
+    strcpy(c->name, name);
     c->num_tax = num_tax;
     c->time = 0;
     c->bill = 0.0;
