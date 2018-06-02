@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>   // For debugging
 #include "configuration.h"
 #include "iterador.h"
@@ -7,7 +8,7 @@
 #include "client.h"
 #include "food.h"
 #include "pavilion.h"
-
+#include "quicksort.h"
 
 /*===================================
            Global Variables
@@ -288,4 +289,50 @@ food pavilion_get_food(pavilion p, char item)
 {
     char key = item;
     return (food) elementoDicionario(p->bar, (void*)&key);
+}
+
+
+/*===================================
+      pavilion_display_clients
+  Print (alphabetically) a list of 
+    clients and their locations
+===================================*/
+
+void pavilion_display_clients(pavilion p)
+{
+    // Variables
+    char temp_name[MAX_CLIENTS][MAX_INPUT];
+    int temp_keys[MAX_CLIENTS];
+    int min = 0;
+    int max = pavilion_count_clients(p)-1;
+    iterador it = iteradorChaveDicionario(p->clients);
+    int i = 0;
+
+    // Fill our temp name and keys arrays with names and keys
+    while (temSeguinteIterador(it))
+    {
+        int* key = seguinteIterador(it);
+        client c = pavilion_get_client(p, *key);
+        strcpy(temp_name[i], client_get_name(c));
+        temp_keys[i] = *key;
+        i++;
+    }
+
+    // Quick sort through the names and keys
+    quick_sort(temp_name, temp_keys, min, max);
+
+    // Print the list of names
+    for (i=0;i<max+1;i++)
+    {
+        printf("%s esta em ", temp_name[i]);
+        switch(client_get_location(pavilion_get_client(p, temp_keys[i])))
+        {
+            case LOCATION_LINE:         printf("fila trampolins.\n"); break;
+            case LOCATION_TRAMPOLINES:  printf("trampolins.\n"); break;
+            case LOCATION_BAR:          printf("bar.\n"); break;
+        }
+    }
+
+    // Free the memory used by our iterator
+    destroiIterador(it);
 }
