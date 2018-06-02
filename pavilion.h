@@ -3,8 +3,9 @@
 
     typedef struct _pavilion * pavilion;
 
-    pavilion   pavilion_create();
+    pavilion    pavilion_create();
     void        pavilion_destroy(pavilion p);
+    void        pavilion_close(pavilion p);
 
     float       pavilion_get_cash(pavilion p);
     void        pavilion_set_cash(pavilion p, float cash);
