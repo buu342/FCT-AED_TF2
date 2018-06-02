@@ -74,7 +74,7 @@ void commandline(pavilion p)
             case 'V': docommand_V(p, command); break;
             case 'Q': docommand_Q(p, command); break;
             case 'C': docommand_C(p); break;
-            case 'P': docommand_P(p); break;
+            case 'P': docommand_P(p); break; // ALOMST DONE (NEED TO PRINT TRAMPOLINE NUMBER)
             case 'X': docommand_X(p); return;
             case '\n': break;
             default:  printf("Dados invalidos.\n"); break; // Error
@@ -230,6 +230,7 @@ void docommand_C(pavilion p)
     printf("Caixa: %.2f euros.\n", pavilion_get_cash(p));
 }
 
+
 /*===================================
              docommand_P
 Print a list of people alphabetically
@@ -243,7 +244,7 @@ void docommand_P(pavilion p)
         printf("Sem visitantes no pavilhao.\n");
     else
     {
-        
+        pavilion_display_clients(p);
     }
 }
 
