@@ -23,6 +23,7 @@ void docommand_V(pavilion p, char* command);
 void docommand_Q(pavilion p, char* command);
 void docommand_C(pavilion p);
 void docommand_P(pavilion p); // fila de trampolins
+void docommand_X(pavilion p); 
 
 
 /*===================================
@@ -42,7 +43,7 @@ int main()
     // Go to the command line
     commandline(p);
 
-    // If we exit the command line, free the memory
+    // If we exit the command line, close the pavilion and free the memory
     pavilion_destroy(p);
     return 0;
 }
@@ -74,7 +75,7 @@ void commandline(pavilion p)
             case 'Q': docommand_Q(p, command); break;
             case 'C': docommand_C(p); break;
             case 'P': docommand_P(p); break;
-            case 'X': return;
+            case 'X': docommand_X(p); return;
             case '\n': break;
             default:  printf("Dados invalidos.\n"); break; // Error
         }
@@ -243,5 +244,27 @@ void docommand_P(pavilion p)
     else
     {
         
+    }
+}
+
+
+/*===================================
+             docommand_X
+ Print the final information before
+         exiting the program
+===================================*/
+
+void docommand_X(pavilion p)
+{
+    int i;
+    pavilion_close(p);
+    printf("Caixa: %.2f euros.\n", pavilion_get_cash(p));
+    for (i=0;i<NUM_FOOD;i++)
+    {
+        char key = food_get_key_from_index(i);
+        food f = pavilion_get_food(p, key);
+        if (f == NULL)
+            return;
+        printf("Stock %s: %d\n", food_get_name(f), food_get_stock(f));
     }
 }
