@@ -19,4 +19,6 @@
     bool        pavilion_exists_food(pavilion p, char item);
     food        pavilion_get_food(pavilion p, char item);
 
+    void        pavilion_display_clients(pavilion p);
+
 #endif
