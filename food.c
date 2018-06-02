@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "configuration.h"
 #include "food.h"
 
@@ -6,6 +7,7 @@ struct _food
 {
     int     stock;
     float   price;
+    char*   name;
 };
 
 /*===================================
@@ -14,7 +16,7 @@ struct _food
             and return it
 ===================================*/
 
-food food_create(int stock, float price)
+food food_create(int stock, float price, char* name)
 {
     // Allocate memory for the food
     food f = (food) malloc(sizeof(struct _food));
@@ -25,6 +27,8 @@ food food_create(int stock, float price)
 
     f->stock = stock;
     f->price = price;
+    f->name = (char*) malloc(sizeof(char)*strlen(name)+1);
+    strcpy(f->name, name);
 
     return f;
 }
@@ -42,7 +46,7 @@ void food_destroy(food f)
 
 
 /*===================================
-         food_destroy_all
+          food_destroy_all
   Free memory occupied by all food
 ===================================*/
 
@@ -53,9 +57,9 @@ void food_destroy_all(void* f)
 
 
 /*===================================
-         food_get_stock
-  Return the stock for this specific
-             item
+           food_get_stock
+  Return the stock of this specific
+               item
 ===================================*/
 
 int food_get_stock(food f)
@@ -65,9 +69,9 @@ int food_get_stock(food f)
 
 
 /*===================================
-         food_set_stock
-   Set the stock for this specific
-             item
+            food_set_stock
+   Set the stock of this specific
+                item
 ===================================*/
 
 void food_set_stock(food f, int stock)
@@ -77,12 +81,62 @@ void food_set_stock(food f, int stock)
 
 
 /*===================================
-         food_get_price
-  Return the price for this specific
-             item
+            food_get_price         
+  Return the price of this specific
+                item
 ===================================*/
 
 float food_get_price(food f)
 {
     return f->price;
+}
+
+
+/*===================================
+            food_get_name              
+  Return the name of this specific
+               item
+===================================*/
+
+char* food_get_name(food f)
+{
+    return f->name;
+}
+
+
+/*===================================
+       food_get_key_from_index              
+Return the key from an index (for for
+               loops)
+===================================*/
+
+char food_get_key_from_index(int index)
+{
+    char key;
+    switch(index)
+    {
+        case 0: key = FOOD_COFFEE; break;
+        case 1: key = FOOD_JUICE; break;
+        case 2: key = FOOD_CAKE; break;
+    }
+    return key;
+}
+
+
+/*===================================
+       food_get_key_from_index              
+  Return the name from an index (for 
+              for loops)
+===================================*/
+
+char* food_get_name_from_index(int index)
+{
+    char* name;
+    switch(index)
+    {
+        case 0: name = "cafe"; break;
+        case 1: name = "sumo"; break;
+        case 2: name = "bolo"; break;
+    }
+    return name;
 }
