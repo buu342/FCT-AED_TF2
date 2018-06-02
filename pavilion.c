@@ -27,7 +27,7 @@ struct _pavilion
               Prototypes            
 ===================================*/
 
-status pavilion_add_food(pavilion p, int index, int stock, float price);
+status pavilion_add_food(pavilion p, int index, int stock, float price); // Not in pavillion.h
 
 
 /*===================================
@@ -112,6 +112,25 @@ void pavilion_destroy(pavilion p)
     destroiDicEElems(p->clients, client_destroy_all);
     destroiDicEElems(p->bar, food_destroy_all);
     free(p);
+}
+
+
+/*===================================
+           pavilion_close
+  Force everyone out of the pavilion
+===================================*/
+
+void pavilion_close(pavilion p)
+{
+    iterador it = iteradorDicionario(p->clients);
+    while (temSeguinteIterador(it))
+    {
+        client c = seguinteIterador(it);
+        if (client_get_location(c) == LOCATION_TRAMPOLINES)
+            client_set_time(c, 200);
+        pavilion_set_cash(p, pavilion_get_cash(p) + client_get_bill(c) + (1+((max((float)client_get_time(c)-1,0))/30))*5);
+    }
+    destroiIterador(it);
 }
 
 
@@ -227,16 +246,10 @@ Helper function to add a food element
 status pavilion_add_food(pavilion p, int index, int stock, float price)
 {
     // Variables
-    char key;
-    switch  (index)
-    {
-        case 0: key = FOOD_COFFEE; break;
-        case 1: key = FOOD_JUICE; break;
-        case 2: key = FOOD_CAKE; break;
-    }
-
+    char key = food_get_key_from_index(index);
+    char* name = food_get_name_from_index(index);
     // Create the food item and check it works
-    food f = food_create(stock, price);
+    food f = food_create(stock, price, name);
     if (f == NULL)
         return FAILURE;
 
