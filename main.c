@@ -244,7 +244,25 @@ void docommand_P(pavilion p)
         printf("Sem visitantes no pavilhao.\n");
     else
     {
-        pavilion_display_clients(p);
+        // Variables
+        int i;
+        int temp_keys[MAX_CLIENTS];
+        char temp_name[MAX_CLIENTS][MAX_INPUT];
+
+        // Fill our variables (and sort them)
+        pavilion_sort_clients(p, temp_name, temp_keys);
+
+        // Print the list of names
+        for (i=0;i<pavilion_count_clients(p);i++)
+        {
+            printf("%s esta em ", temp_name[i]);
+            switch(client_get_location(pavilion_get_client(p, temp_keys[i])))
+            {
+                case LOCATION_LINE:         printf("fila trampolins.\n"); break;
+                case LOCATION_TRAMPOLINES:  printf("trampolins.\n"); break;
+                case LOCATION_BAR:          printf("bar.\n"); break;
+            }
+        }
     }
 }
 
