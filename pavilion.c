@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>   // For debugging
 #include "configuration.h"
 #include "iterador.h"
 #include "dicionario.h"
@@ -13,6 +12,10 @@
 #include "slot.h"
 #include "trampoline.h"
 #include "pavilion.h"
+
+#if DEBUG_MODE
+    #include <time.h>
+#endif
 
 /*===================================
            Global Variables
@@ -47,8 +50,6 @@ pavilion pavilion_create()
 {
     // Variables
     int i;
-    int stock;
-    float price;
 
     // Allocate memory for our pavilion and make sure it works
     pavilion p = (pavilion) malloc(sizeof(struct _pavilion));
@@ -87,11 +88,11 @@ pavilion pavilion_create()
 
         for (i=0;i<NUM_FOOD;i++)
         {
-            printf("%d - ", i);
+            int stock;
+            float price;
             scanf("%d %f", &stock, &price);
             if (pavilion_add_food(p, i, stock, price) == FAILURE)
                 return NULL;
-            printf("%d - %d %f\n", i, stock, price);
         }
     }
     else
@@ -101,8 +102,8 @@ pavilion pavilion_create()
 
         for (i=0;i<NUM_FOOD;i++)
         {
-            stock = rand()%MAX_STOCK;
-            price = ((float)(rand()%9999))/100;
+            int stock = rand()%MAX_STOCK;
+            float price = ((float)(rand()%9999))/100;
             printf("%d %.2f\n", stock, price);
             if (pavilion_add_food(p, i, stock, price) == FAILURE)
                 return NULL;
@@ -139,6 +140,8 @@ void pavilion_destroy(pavilion p)
 {
     destroiDicEElems(p->clients, client_destroy_all);
     destroiDicEElems(p->bar, food_destroy_all);
+    destroiFilaEElems(p->queue, slot_destroy_all);
+    destroiSeqElems(p->trampolines, trampoline_destroy_all);
     free(p);
 }
 
@@ -155,8 +158,12 @@ void pavilion_close(pavilion p)
     {
         client c = seguinteIterador(it);
         if (client_get_location(c) == LOCATION_TRAMPOLINE)
+        {
             client_set_time(c, 1440 - client_get_time(c));
-        pavilion_set_cash(p, pavilion_get_cash(p) + client_get_bill(c) + (1+((max((float)client_get_time(c)-1,0))/30))*5);
+            pavilion_set_cash(p, pavilion_get_cash(p) + client_get_bill(c) + ((1+max(ceil(client_get_time(c), 30)-1,0))*5));
+        }
+        else
+            pavilion_set_cash(p, pavilion_get_cash(p) + client_get_bill(c));
     }
     destroiIterador(it);
 }
@@ -203,7 +210,9 @@ status pavilion_add_client(pavilion p, char* name, int num_id, int num_tax)
 
     // Check if the client isn't already in the pavilion
     if (pavilion_exists_client(p, key) == TRUE)
+    {
         return FAILURE;
+    }
 
     // Add him to the dictionary with his ID as the key
     status ret = adicionaElemDicionario(p->clients, (void*)&key, c);
@@ -303,7 +312,6 @@ void pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], i
 ===================================*/
 
 #if DEBUG_MODE
-    #include <stdio.h>
     void pavilion_printdebug(pavilion p)
     {
         int i=0;
@@ -341,13 +349,13 @@ int pavilion_move_client(pavilion p, int helper, char location)
         // Get a client from the ID and set his location
         client c = pavilion_get_client(p, helper);
         if (c == NULL)
-            return -2;
+            return 0;
         client_set_location(c, location);
 
         // Allocate memory for a slot in the queue
         slot s = slot_create(c, helper);
         if (s == NULL)
-            return -2;
+            return 0;
 
         // Add the slot to the queue
         adicionaElemFila(p->queue, s);
@@ -358,14 +366,19 @@ int pavilion_move_client(pavilion p, int helper, char location)
         while (temSeguinteIterador(it))
         {
             trampoline t = seguinteIterador(it);
-            if (trampoline_empty(t))
+            if (!trampoline_empty(t) && !temSeguinteIterador(it))
+                return TRAMPOLINE_EMPTY;
+            else if (trampoline_empty(t))
             {
                 if (vaziaFila(p->queue))
                     continue;
 
                 slot s = removeElemFila(p->queue);
                 if (s == NULL)
-                    return -2;
+                {
+                    destroiIterador(it);
+                    return TRAMPOLINE_BUSY;
+                }
                 i++;
                 client c = slot_get_client(s);
                 trampoline_set_client(t, c, slot_get_id(s));
@@ -375,9 +388,29 @@ int pavilion_move_client(pavilion p, int helper, char location)
         }
         destroiIterador(it);
     }
+    else if (location == LOCATION_BAR)
+    {
+        iterador it = iteradorSequencia(p->trampolines);
+        while (temSeguinteIterador(it))
+        {
+            trampoline t = seguinteIterador(it);
+            if (trampoline_get_id(t) == helper)
+            {
+                trampoline_remove_client(t);
+                client c = pavilion_get_client(p, helper);
+                client_set_location(c, LOCATION_BAR);
+                destroiIterador(it);
+                return SUCCESS;
+            }
+        }
+        destroiIterador(it);
+        return TRAMPOLINE_NULL;
+    }
+
     #if DEBUG_MODE
         pavilion_printdebug(p);
     #endif
+
     return i;
 }
 
@@ -391,15 +424,18 @@ Helper function to add a food element
 status pavilion_add_food(pavilion p, int index, int stock, float price)
 {
     // Variables
-    char key = food_get_key_from_index(index);
+    char* key = food_get_key_from_index(index);
     char* name = food_get_name_from_index(index);
+
     // Create the food item and check it works
     food f = food_create(stock, price, name);
     if (f == NULL)
         return FAILURE;
 
     // Add it to the dictionary with the char as the key
-    status ret = adicionaElemDicionario(p->bar, (void*)&key, f);
+    status ret = adicionaElemDicionario(p->bar, key, f);
+
+    //printf("Added %s, new size: %d, found %d", name, tamanhoDicionario(p->bar), existeElemDicionario(p->bar, key));
 
     // Make sure it returned success
     if (ret == FAILURE)
@@ -417,20 +453,70 @@ status pavilion_add_food(pavilion p, int index, int stock, float price)
       index  exists in the bar
 ===================================*/
 
-bool pavilion_exists_food(pavilion p, char item)
+bool pavilion_exists_food(pavilion p, char* item)
 {
-    char key = item;
-    return existeElemDicionario(p->bar, (void*)&key);
+    char* key = item;
+    return existeElemDicionario(p->bar, key);
 }
 
 
 /*===================================
-        pavilion_get_food
+          pavilion_get_food
 Return a food item using a character
 ===================================*/
 
-food pavilion_get_food(pavilion p, char item)
+food pavilion_get_food(pavilion p, char* item)
 {
-    char key = item;
-    return (food) elementoDicionario(p->bar, (void*)&key);
+    char* key = item;
+    return (food) elementoDicionario(p->bar, key);
+}
+
+
+/*===================================
+  pavilion_get_trampoline_clientid
+ Return the ID of the client in the 
+        specified trampoline
+===================================*/
+
+int pavilion_get_trampoline_clientid(pavilion p, int index)
+{
+    int i=1;
+    iterador it = iteradorSequencia(p->trampolines);
+    while (temSeguinteIterador(it))
+    {
+        trampoline t = seguinteIterador(it);
+        if (i == index)
+        {
+            destroiIterador(it);
+            if (trampoline_empty(t))
+                return TRAMPOLINE_EMPTY;
+            else
+                return trampoline_get_id(t);
+        }
+        i++;
+    }
+    destroiIterador(it);
+    return TRAMPOLINE_NULL;
+}
+
+
+
+int pavilion_find_trampoline(pavilion p, int num_id)
+{
+    int i=1;
+    iterador it = iteradorSequencia(p->trampolines);
+    while (temSeguinteIterador(it))
+    {
+        trampoline t = seguinteIterador(it);
+        if (trampoline_get_id(t) == num_id)
+        {
+            destroiIterador(it);
+            return i;
+        }
+        i++;
+    }
+
+    // This shouldn't happen... But just in case!
+    destroiIterador(it);
+    return TRAMPOLINE_NULL;
 }
