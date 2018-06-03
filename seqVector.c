@@ -2,78 +2,101 @@
 #include "iterador.h"
 #include "sequencia.h"
 
-// Definition of our sequence struct
 struct _sequencia
 {
-    void** element; // apontador para vector de enderecos de elementos
-    int numElements;
-    int size; // capacidade corrente do vector
+    void** elems;
+    int numelems;
+    int capacidade;
 };
 
 
-sequencia criaSequencia(int capacity)
+sequencia criaSequencia(int cap)
 {
-    // Allocate memory for the sequence
-    sequencia seq = malloc(sizeof(struct _sequencia));
+    sequencia s;
 
-    // Check if it was created sucessfully.
-    if (seq == NULL) 
+    s=(sequencia) malloc(sizeof(struct _sequencia));
+    if(s==NULL)
         return NULL;
 
-    seq->element = NULL;
-    seq->numElements = 0;
-    seq->size = capacity;
-    
-    return seq;
-}
+    s->elems = malloc(sizeof(void*) * cap);
+    if (s->elems == NULL)
+    {
+        free(s);
+        return NULL;
+    }
 
+    s->numelems=0;
+    s->capacidade=cap;
+
+    return s;
+}
 
 void destroiSequencia(sequencia s)
 {
-    //Fazer
+    free(s->elems);
+    free(s);
 }
 
-
-void destroiSeqElems(sequencia s, void (*destroi)(void *))
+void destroiSeqElems(sequencia s, void (*destroi)(void *) )
 {
-    //Fazer
-}
+    int i;
 
+    for(i=0;i<s->numelems;i++)
+        destroi(s->elems[i]);
+    destroiSequencia(s);
+}
 
 int vaziaSequencia(sequencia s)
 {
-    //Fazer
-    return 0;
+    return (s->numelems==0);
 }
-
 
 int tamanhoSequencia(sequencia s)
 {
-    //Fazer
-    return 0;
+    return s->numelems;
 }
-
 
 void* elementoPosSequencia(sequencia s, int i)
 {
-    //Fazer
+    void *elem=s->elems[i-1];
+    return elem;
 }
-
 
 void adicionaPosSequencia(sequencia s, void * elem, int i)
 {
-    //Fazer
-}
+    int j;
 
+    for(j=i; j<s->numelems; j++)
+        s->elems[j-1]=s->elems[j];
+
+    s->elems[i-1] = elem;
+    s->numelems++;
+}
 
 void* removePosSequencia(sequencia s, int i)
 {
-    //Fazer
-}
 
+    void* elemtoremove = s->elems[i-1];
+    int j;
+
+    for (j = i; j < s->numelems; j++)
+        s->elems[j-1] = s->elems[j];
+
+    s->numelems--;
+
+    return elemtoremove;
+}
 
 iterador iteradorSequencia(sequencia s)
 {
-    //CUIDADO: DEVE DAR AO ITERADOR UMA COPIA DO VECTOR A PERCORRER
-    //Fazer
+
+    int i;
+    void **aux = malloc(sizeof (void*) * s->numelems);
+
+    for (i = 0; i < s->numelems; i++)
+        aux[i] = s->elems[i];
+
+    iterador it = criaIterador(aux, s->numelems);
+
+    return it;
 }
