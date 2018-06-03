@@ -1,7 +1,7 @@
 #ifndef _CONFIG
 #define _CONFIG
 
-    #define DEBUG_MODE      1
+    #define DEBUG_MODE      0
 
     #define bool            char
     #define FALSE           0
@@ -20,14 +20,19 @@
     #define KEYTYPE_STRING  1
 
     #define NUM_FOOD        3
-    #define FOOD_COFFEE     'C'
-    #define FOOD_JUICE      'S'
-    #define FOOD_CAKE       'B'
+    #define FOOD_COFFEE     "C"
+    #define FOOD_JUICE      "S"
+    #define FOOD_CAKE       "B"
 
     #define LOCATION_QUEUE          'L'
     #define LOCATION_TRAMPOLINE     'T'
     #define LOCATION_BAR            'B'
 
-    #define max(a,b) ((a)>(b) ? a:b)
+    #define TRAMPOLINE_BUSY         -1
+    #define TRAMPOLINE_NULL         -2
+    #define TRAMPOLINE_EMPTY        -3
+
+    #define max(a,b)    ((a)>(b) ? a:b)
+    #define ceil(a,b)   (((a)+(b)-1) / (b)) // Note_ Only works for positive numbers
 
 #endif
