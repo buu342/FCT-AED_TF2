@@ -15,10 +15,10 @@
     bool        pavilion_exists_client(pavilion p, int num_id);
     client      pavilion_get_client(pavilion p, int num_id);
     int         pavilion_count_clients(pavilion p);
+    void        pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], int temp_keys[MAX_CLIENTS]);
+    int         pavilion_move_client(pavilion p, int helper, char location);
 
     bool        pavilion_exists_food(pavilion p, char item);
     food        pavilion_get_food(pavilion p, char item);
-
-    void        pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], int temp_keys[MAX_CLIENTS]);
 
 #endif
