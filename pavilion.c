@@ -5,10 +5,14 @@
 #include "configuration.h"
 #include "iterador.h"
 #include "dicionario.h"
+#include "fila.h"
+#include "sequencia.h"
+#include "quicksort.h"
 #include "client.h"
 #include "food.h"
+#include "slot.h"
+#include "trampoline.h"
 #include "pavilion.h"
-#include "quicksort.h"
 
 /*===================================
            Global Variables
@@ -19,8 +23,10 @@ struct _pavilion
     float cash;
     int num_trampolines;
 
-    dicionario clients;
-    dicionario bar;
+    dicionario  clients;
+    dicionario  bar;
+    fila        queue;
+    sequencia   trampolines;
 };
 
 
@@ -41,6 +47,8 @@ pavilion pavilion_create()
 {
     // Variables
     int i;
+    int stock;
+    float price;
 
     // Allocate memory for our pavilion and make sure it works
     pavilion p = (pavilion) malloc(sizeof(struct _pavilion));
@@ -63,12 +71,18 @@ pavilion pavilion_create()
         return NULL;
     }
 
+    // Create a queue to store our clients
+    p->queue = criaFila(MAX_CLIENTS);
+    if (p->queue == NULL)
+    {
+        free(p);
+        return NULL;
+    }
+
     // Set default values and request trampoline number and bar stock+price
     p->cash = 0.0;
     if (!DEBUG_MODE)
     {
-        int stock;
-        float price;
         scanf("%d", &(p->num_trampolines));
 
         for (i=0;i<NUM_FOOD;i++)
@@ -82,10 +96,7 @@ pavilion pavilion_create()
     }
     else
     {
-        int stock;
-        float price;
-
-        p->num_trampolines = rand()%20;
+        p->num_trampolines = 1+(rand()%19);
         printf("%d\n", p->num_trampolines);
 
         for (i=0;i<NUM_FOOD;i++)
@@ -96,6 +107,22 @@ pavilion pavilion_create()
             if (pavilion_add_food(p, i, stock, price) == FAILURE)
                 return NULL;
         }
+    }
+
+
+    // Create a sequence of trampolines and fill it up with an empty trampoline struct
+    p->trampolines = criaSequencia(p->num_trampolines);
+    if (p->trampolines == NULL)
+    {
+        free(p);
+        return NULL;
+    }
+    for (i=0;i<p->num_trampolines;i++)
+    {
+        trampoline t = trampoline_create();
+        if (t == NULL)
+            return NULL;
+        adicionaPosSequencia(p->trampolines, t, i+1);
     }
 
     return p;
@@ -127,8 +154,8 @@ void pavilion_close(pavilion p)
     while (temSeguinteIterador(it))
     {
         client c = seguinteIterador(it);
-        if (client_get_location(c) == LOCATION_TRAMPOLINES)
-            client_set_time(c, 200);
+        if (client_get_location(c) == LOCATION_TRAMPOLINE)
+            client_set_time(c, 1440 - client_get_time(c));
         pavilion_set_cash(p, pavilion_get_cash(p) + client_get_bill(c) + (1+((max((float)client_get_time(c)-1,0))/30))*5);
     }
     destroiIterador(it);
@@ -237,6 +264,123 @@ int pavilion_count_clients(pavilion p)
 }
 
 
+/*===================================
+       pavilion_sort_clients
+   Sort (alphabetically) a list of 
+          clients and keys
+===================================*/
+
+void pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], int temp_keys[MAX_CLIENTS])
+{
+    // Variables
+    int min = 0;
+    int max = pavilion_count_clients(p)-1;
+    iterador it = iteradorChaveDicionario(p->clients);
+    int i = 0;
+
+    // Fill our temp name and keys arrays with names and keys
+    while (temSeguinteIterador(it))
+    {
+        int* key = seguinteIterador(it);
+        client c = pavilion_get_client(p, *key);
+        strcpy(temp_name[i], client_get_name(c));
+        temp_keys[i] = *key;
+        i++;
+    }
+
+    // Quick sort through the names and keys
+    quick_sort(temp_name, temp_keys, min, max);
+
+    // Free the memory used by our iterator
+    destroiIterador(it);
+}
+
+
+/*===================================
+         pavilion_printdebug       
+  Print the queue size and list of
+     clients in the trampolines
+===================================*/
+
+#if DEBUG_MODE
+    #include <stdio.h>
+    void pavilion_printdebug(pavilion p)
+    {
+        int i=0;
+ 
+        if (vaziaFila(p->queue) == TRUE)
+            printf("\x1b[31m Queue Empty \x1b[0m\n");
+        else
+            printf("\x1b[31m Queue Size %d \x1b[0m\n", tamanhoFila(p->queue));
+
+        iterador it = iteradorSequencia(p->trampolines);
+        while (temSeguinteIterador(it))
+        {
+            trampoline t = seguinteIterador(it);
+            i++;
+            if (trampoline_empty(t) == TRUE)
+                printf("\x1b[31m Trampoline %2d - Empty \x1b[0m\n", i);
+            else
+                printf("\x1b[31m Trampoline %2d - %s \x1b[0m\n", i, client_get_name(trampoline_get_client(t)));
+        }
+        destroiIterador(it);
+    }
+#endif
+
+
+/*===================================
+       pavilion_move_client
+  Move a client around the pavilion
+===================================*/
+
+int pavilion_move_client(pavilion p, int helper, char location)
+{
+    int i=0;
+    if (location == LOCATION_QUEUE)
+    {
+        // Get a client from the ID and set his location
+        client c = pavilion_get_client(p, helper);
+        if (c == NULL)
+            return -2;
+        client_set_location(c, location);
+
+        // Allocate memory for a slot in the queue
+        slot s = slot_create(c, helper);
+        if (s == NULL)
+            return -2;
+
+        // Add the slot to the queue
+        adicionaElemFila(p->queue, s);
+    }
+    else if (location == LOCATION_TRAMPOLINE)
+    {
+        iterador it = iteradorSequencia(p->trampolines);
+        while (temSeguinteIterador(it))
+        {
+            trampoline t = seguinteIterador(it);
+            if (trampoline_empty(t))
+            {
+                if (vaziaFila(p->queue))
+                    continue;
+
+                slot s = removeElemFila(p->queue);
+                if (s == NULL)
+                    return -2;
+                i++;
+                client c = slot_get_client(s);
+                trampoline_set_client(t, c, slot_get_id(s));
+                client_set_location(c, location);
+                client_set_time(c, client_get_time(c) + helper);
+            }
+        }
+        destroiIterador(it);
+    }
+    #if DEBUG_MODE
+        pavilion_printdebug(p);
+    #endif
+    return i;
+}
+
 
 /*===================================
         pavilion_add_food
@@ -289,36 +433,4 @@ food pavilion_get_food(pavilion p, char item)
 {
     char key = item;
     return (food) elementoDicionario(p->bar, (void*)&key);
-}
-
-
-/*===================================
-       pavilion_sort_clients
-   Sort (alphabetically) a list of 
-         clients and keyss
-===================================*/
-
-void pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], int temp_keys[MAX_CLIENTS])
-{
-    // Variables
-    int min = 0;
-    int max = pavilion_count_clients(p)-1;
-    iterador it = iteradorChaveDicionario(p->clients);
-    int i = 0;
-
-    // Fill our temp name and keys arrays with names and keys
-    while (temSeguinteIterador(it))
-    {
-        int* key = seguinteIterador(it);
-        client c = pavilion_get_client(p, *key);
-        strcpy(temp_name[i], client_get_name(c));
-        temp_keys[i] = *key;
-        i++;
-    }
-
-    // Quick sort through the names and keys
-    quick_sort(temp_name, temp_keys, min, max);
-
-    // Free the memory used by our iterator
-    destroiIterador(it);
 }
