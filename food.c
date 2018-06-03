@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "configuration.h"
 #include "food.h"
@@ -22,7 +23,7 @@ food food_create(int stock, float price, char* name)
     food f = (food) malloc(sizeof(struct _food));
 
     // Make sure we managed to allocate memory.
-    if (f == NULL) 
+    if (f == NULL)
         return NULL;
 
     f->stock = stock;
@@ -110,9 +111,9 @@ Return the key from an index (for for
                loops)
 ===================================*/
 
-char food_get_key_from_index(int index)
+char* food_get_key_from_index(int index)
 {
-    char key;
+    char* key;
     switch(index)
     {
         case 0: key = FOOD_COFFEE; break;
