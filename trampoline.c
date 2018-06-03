@@ -24,10 +24,26 @@ trampoline trampoline_create()
     return t;
 }
 
+void trampoline_destroy(trampoline t)
+{
+    free(t);
+}
+
+void trampoline_destroy_all(void* t)
+{
+    trampoline_destroy((trampoline) t);
+}
+
 void trampoline_set_client(trampoline t, client c, int num_id)
 {
     t->c = c;
     t->num_id = num_id;
+}
+
+void trampoline_remove_client(trampoline t)
+{
+    t->c = NULL;
+    t->num_id = 0;
 }
 
 bool trampoline_empty(trampoline t)
@@ -38,4 +54,9 @@ bool trampoline_empty(trampoline t)
 client trampoline_get_client(trampoline t)
 {
     return t->c;
+}
+
+int trampoline_get_id(trampoline t)
+{
+    return t->num_id;
 }
