@@ -18,7 +18,10 @@
     void        pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], int temp_keys[MAX_CLIENTS]);
     int         pavilion_move_client(pavilion p, int helper, char location);
 
-    bool        pavilion_exists_food(pavilion p, char item);
-    food        pavilion_get_food(pavilion p, char item);
+    bool        pavilion_exists_food(pavilion p, char* item);
+    food        pavilion_get_food(pavilion p, char* item);
+
+    int         pavilion_get_trampoline_clientid(pavilion p, int index);
+    int         pavilion_find_trampoline(pavilion p, int num_id);
 
 #endif
