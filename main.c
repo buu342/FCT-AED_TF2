@@ -68,7 +68,7 @@ void commandline(pavilion p)
         {
             case 'E': docommand_E(p, command); break;
             case 'F': docommand_F(p, command); break;
-            case 'L': break;
+            case 'L': docommand_L(p, command); break;
             case 'T': break;
             case 'S': break;
             case 'V': docommand_V(p, command); break;
@@ -142,9 +142,36 @@ void docommand_F(pavilion p, char* command)
         printf("Chegada nao autorizada a fila.\n");
     else
     {
-        client_set_location(c, LOCATION_LINE);
+        pavilion_move_client(p, num_id, LOCATION_QUEUE);
         printf("Chegada autorizada a fila.\n");
     }
+}
+
+
+/*===================================
+             docommand_L
+Add as many people as possible to the
+      first empty trampolines
+===================================*/
+
+void docommand_L(pavilion p, char* command)
+{
+    // Variables
+    int hours;
+    int minutes;
+    int timeminutes;
+    int count;
+
+    // Read the command and check if the client is valid
+    sscanf(command, "L %d:%d", &hours, &minutes);
+
+    timeminutes = hours*60 + minutes;
+
+    count = pavilion_move_client(p, timeminutes, LOCATION_TRAMPOLINE);
+    if (count == 0)
+        printf("Fila vazia.\n");
+    else
+        printf("Entrada de %d visitantes nos trampolins.\n", count);
 }
 
 
@@ -258,8 +285,8 @@ void docommand_P(pavilion p)
             printf("%s esta em ", temp_name[i]);
             switch(client_get_location(pavilion_get_client(p, temp_keys[i])))
             {
-                case LOCATION_LINE:         printf("fila trampolins.\n"); break;
-                case LOCATION_TRAMPOLINES:  printf("trampolins.\n"); break;
+                case LOCATION_QUEUE:         printf("fila trampolins.\n"); break;
+                case LOCATION_TRAMPOLINE:  printf("trampolins.\n"); break;
                 case LOCATION_BAR:          printf("bar.\n"); break;
             }
         }
