@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <string.h> // For debugging
-#include <time.h>   // For debugging
 #include "configuration.h"
 #include "client.h"
 #include "food.h"
 #include "pavilion.h"
 
+#if DEBUG_MODE
+    #include <string.h>
+    #include <time.h>
+#endif
 
 /*===================================
               Prototypes
@@ -17,13 +19,13 @@ void commandline(pavilion p);
 void docommand_E(pavilion p, char* command);
 void docommand_F(pavilion p, char* command);
 void docommand_L(pavilion p, char* command);
-void docommand_T(pavilion p, char* command); // Trampolim vazio.\n
+void docommand_T(pavilion p, char* command);
 void docommand_S(pavilion p, char* command);
 void docommand_V(pavilion p, char* command);
 void docommand_Q(pavilion p, char* command);
 void docommand_C(pavilion p);
-void docommand_P(pavilion p); // fila de trampolins
-void docommand_X(pavilion p); 
+void docommand_P(pavilion p);
+void docommand_X(pavilion p); // Afterwards test, submit and, once working, comment properly.
 
 
 /*===================================
@@ -39,6 +41,7 @@ int main()
     pavilion p = pavilion_create();
     if (p == NULL)
         return 0;
+    printf("Abertura pavilhao.\n");
         
     // Go to the command line
     commandline(p);
@@ -69,18 +72,17 @@ void commandline(pavilion p)
             case 'E': docommand_E(p, command); break;
             case 'F': docommand_F(p, command); break;
             case 'L': docommand_L(p, command); break;
-            case 'T': break;
-            case 'S': break;
+            case 'T': docommand_T(p, command); break;
+            case 'S': docommand_S(p, command); break;
             case 'V': docommand_V(p, command); break;
             case 'Q': docommand_Q(p, command); break;
             case 'C': docommand_C(p); break;
-            case 'P': docommand_P(p); break; // ALOMST DONE (NEED TO PRINT TRAMPOLINE NUMBER)
+            case 'P': docommand_P(p); break;
             case 'X': docommand_X(p); return;
             case '\n': break;
-            default:  printf("Dados invalidos.\n"); break; // Error
+            default:  printf("Dados invalidos.\n"); break;
         }
     }
-
 }
 
 
@@ -98,8 +100,10 @@ void docommand_E(pavilion p, char* command)
     // Ask for information (or generate some if debugging)
     if (!DEBUG_MODE)
     {
-        sscanf(command, "E %d %d", &num_tax, &num_id);
+        sscanf(command, "E %d %d", &num_id, &num_tax);
         fgets(name, MAX_INPUT, stdin);
+        // Remove the trailing \n
+        strtok(name, "\n");
     }
     else
     {
@@ -160,20 +164,104 @@ void docommand_L(pavilion p, char* command)
     int hours;
     int minutes;
     int timeminutes;
-    int count;
+    int ret;
 
     // Read the command and check if the client is valid
-    sscanf(command, "L %d:%d", &hours, &minutes);
+    if (!DEBUG_MODE)
+        sscanf(command, "L %d:%d", &hours, &minutes);
+    else
+    {
+        hours = 9;
+        minutes = 0;
+        printf("9:00\n");
+    }
 
     timeminutes = hours*60 + minutes;
 
-    count = pavilion_move_client(p, timeminutes, LOCATION_TRAMPOLINE);
-    if (count == 0)
+    ret = pavilion_move_client(p, timeminutes, LOCATION_TRAMPOLINE);
+    if (ret == 0)
         printf("Fila vazia.\n");
+    else if (ret == TRAMPOLINE_BUSY)
+        printf("Trampolins ocupados.\n");
     else
-        printf("Entrada de %d visitantes nos trampolins.\n", count);
+        printf("Entrada de %d visitantes nos trampolins.\n", ret);
 }
 
+
+/*===================================
+             docommand_T
+  Print the client in the specified 
+             trampoline
+===================================*/
+
+void docommand_T(pavilion p, char* command)
+{
+    // Variables
+    int index;
+    int ret;
+
+    // Read the command and check if the client is valid
+    sscanf(command, "T %d", &index);
+
+    ret = pavilion_get_trampoline_clientid(p, index);
+
+    if (ret == TRAMPOLINE_EMPTY)
+        printf("Trampolim vazio.\n");
+    else if (ret == TRAMPOLINE_NULL)
+        printf("Trampolim inexistente.\n");
+    else
+        printf("%s esta no trampolim %d.\n", client_get_name(pavilion_get_client(p, ret)), index);
+}
+
+
+/*===================================
+             docommand_S
+ Remove a client from the trampoline
+===================================*/
+
+void docommand_S(pavilion p, char* command)
+{
+    // Variables
+    int num_id;
+    int hours;
+    int minutes;
+    int timeminutes;
+
+    // Read the command and check if the client is valid
+    if (!DEBUG_MODE)
+        sscanf(command, "S %d %d:%d", &num_id, &hours, &minutes);
+    else
+    {
+        hours = 10;
+        minutes = 30;
+        printf("10:30\n");
+    }
+
+    timeminutes = hours*60 + minutes;
+    if (pavilion_exists_client(p, num_id) == FALSE)
+    {
+        printf("Visitante nao esta no pavilhao.\n");
+        return;
+    }
+    client c = pavilion_get_client(p, num_id);
+
+    if (client_get_time(c) >= timeminutes)
+    {
+        printf("Hora errada.\n");
+        return;
+    }
+
+    int ret = pavilion_move_client(p, num_id, LOCATION_BAR);
+    if (ret == TRAMPOLINE_NULL)
+        printf("Saida trampolim nao autorizada.\n");
+    else 
+    {
+        printf("Saida trampolim autorizada.\n");
+        client_set_bill(c, client_get_bill(c) + ((1+max(ceil((timeminutes - client_get_time(c)), 30)-1,0))*5));
+        client_set_time(c, 0);
+    }
+}
+ 
 
 /*===================================
              docommand_V
@@ -184,12 +272,12 @@ void docommand_V(pavilion p, char* command)
 {
     // Variables
     int num_id, amount;
-    char item;
+    char item[2];
     client c;
 
     // Read the command
-    sscanf(command, "V %c %d %d", &item, &amount, &num_id);
-    item = toupper(item);
+    sscanf(command, "V %s %d %d", item, &amount, &num_id);
+    item[0] = toupper(item[0]);
 
     // Make sure the client is valid
     if (pavilion_exists_client(p, num_id) == FALSE)
@@ -203,7 +291,7 @@ void docommand_V(pavilion p, char* command)
     if (client_get_location(c) != LOCATION_BAR)
         printf("Venda nao autorizada.\n");
     else if (pavilion_exists_food(p, item) == FALSE || food_get_stock(pavilion_get_food(p, item)) < amount)
-        printf("Produto %c esgotado.\n", item);
+        printf("Produto %s esgotado.\n", item);
     else
     {
         food f = pavilion_get_food(p, item);
@@ -239,7 +327,10 @@ void docommand_Q(pavilion p, char* command)
         printf("Saida nao autorizada.\n");
     else
     {
-        bill = client_get_bill(c) + (1+((max((float)client_get_time(c)-1,0))/30))*5;
+        if (client_get_bill(c) == 0)
+            bill = 5;
+        else
+            bill = client_get_bill(c);
         pavilion_set_cash(p, pavilion_get_cash(p) + bill);
         pavilion_remove_client(p, num_id);
         printf("Saida autorizada, valor a pagar %.2f euros.\n", bill);
@@ -285,8 +376,8 @@ void docommand_P(pavilion p)
             printf("%s esta em ", temp_name[i]);
             switch(client_get_location(pavilion_get_client(p, temp_keys[i])))
             {
-                case LOCATION_QUEUE:         printf("fila trampolins.\n"); break;
-                case LOCATION_TRAMPOLINE:  printf("trampolins.\n"); break;
+                case LOCATION_QUEUE:        printf("fila de trampolins.\n"); break;
+                case LOCATION_TRAMPOLINE:   printf("trampolim %d.\n", pavilion_find_trampoline(p, temp_keys[i])); break;
                 case LOCATION_BAR:          printf("bar.\n"); break;
             }
         }
@@ -307,10 +398,10 @@ void docommand_X(pavilion p)
     printf("Caixa: %.2f euros.\n", pavilion_get_cash(p));
     for (i=0;i<NUM_FOOD;i++)
     {
-        char key = food_get_key_from_index(i);
+        char* key = food_get_key_from_index(i);
         food f = pavilion_get_food(p, key);
         if (f == NULL)
-            return;
-        printf("Stock %s: %d\n", food_get_name(f), food_get_stock(f));
+            continue;
+        printf("Stock %s: %d.\n", food_get_name(f), food_get_stock(f));
     }
 }
