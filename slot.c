@@ -30,6 +30,11 @@ void slot_destroy(slot s)
     free(s);
 }
 
+void slot_destroy_all(void* s)
+{
+    slot_destroy((slot) s);
+}
+
 client slot_get_client(slot s)
 {
     return s->c;
