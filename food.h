@@ -14,7 +14,7 @@
 
     char*   food_get_name(food f);
 
-    char    food_get_key_from_index(int index);
+    char*   food_get_key_from_index(int index);
     char*   food_get_name_from_index(int index);
 
 #endif
