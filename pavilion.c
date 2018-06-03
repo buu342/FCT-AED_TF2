@@ -293,16 +293,14 @@ food pavilion_get_food(pavilion p, char item)
 
 
 /*===================================
-      pavilion_display_clients
-  Print (alphabetically) a list of 
-    clients and their locations
+       pavilion_sort_clients
+   Sort (alphabetically) a list of 
+         clients and keyss
 ===================================*/
 
-void pavilion_display_clients(pavilion p)
+void pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], int temp_keys[MAX_CLIENTS])
 {
     // Variables
-    char temp_name[MAX_CLIENTS][MAX_INPUT];
-    int temp_keys[MAX_CLIENTS];
     int min = 0;
     int max = pavilion_count_clients(p)-1;
     iterador it = iteradorChaveDicionario(p->clients);
@@ -320,18 +318,6 @@ void pavilion_display_clients(pavilion p)
 
     // Quick sort through the names and keys
     quick_sort(temp_name, temp_keys, min, max);
-
-    // Print the list of names
-    for (i=0;i<max+1;i++)
-    {
-        printf("%s esta em ", temp_name[i]);
-        switch(client_get_location(pavilion_get_client(p, temp_keys[i])))
-        {
-            case LOCATION_LINE:         printf("fila trampolins.\n"); break;
-            case LOCATION_TRAMPOLINES:  printf("trampolins.\n"); break;
-            case LOCATION_BAR:          printf("bar.\n"); break;
-        }
-    }
 
     // Free the memory used by our iterator
     destroiIterador(it);
