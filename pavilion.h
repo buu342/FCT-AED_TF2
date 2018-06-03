@@ -19,6 +19,6 @@
     bool        pavilion_exists_food(pavilion p, char item);
     food        pavilion_get_food(pavilion p, char item);
 
-    void        pavilion_display_clients(pavilion p);
+    void        pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], int temp_keys[MAX_CLIENTS]);
 
 #endif
