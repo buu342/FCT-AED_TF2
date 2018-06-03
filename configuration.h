@@ -24,8 +24,8 @@
     #define FOOD_JUICE      'S'
     #define FOOD_CAKE       'B'
 
-    #define LOCATION_LINE           'L'
-    #define LOCATION_TRAMPOLINES    'T'
+    #define LOCATION_QUEUE          'L'
+    #define LOCATION_TRAMPOLINE     'T'
     #define LOCATION_BAR            'B'
 
     #define max(a,b) ((a)>(b) ? a:b)
