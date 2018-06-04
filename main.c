@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "configuration.h"
 #include "client.h"
 #include "food.h"
 #include "pavilion.h"
 
 #if DEBUG_MODE
-    #include <string.h>
     #include <time.h>
 #endif
+
 
 /*===================================
               Prototypes
@@ -35,7 +36,9 @@ void docommand_X(pavilion p); // Afterwards test, submit and, once working, comm
 int main()
 {
     // Generate a random seed (for debugging)
-    srand(time(NULL));
+    #if DEBUG_MODE
+        srand(time(NULL));
+    #endif
 
     // Create our pavilion and make sure it works
     pavilion p = pavilion_create();
@@ -94,23 +97,27 @@ void commandline(pavilion p)
 void docommand_E(pavilion p, char* command)
 {
     // Variables
-    int num_id, num_tax;
+    int num_id=0, num_tax=0;
     char name[MAX_INPUT];
 
     // Ask for information (or generate some if debugging)
-    if (!DEBUG_MODE)
-    {
+    #if !DEBUG_MODE
         sscanf(command, "E %d %d", &num_id, &num_tax);
         fgets(name, MAX_INPUT, stdin);
         // Remove the trailing \n
-        strtok(name, "\n");
-    }
-    else
-    {
+        name[strlen(name)-1]='\0';
+    #else
         num_id = rand()%MAX_CLIENTS;
         num_tax = (int)rand();
         sprintf(name, "John Doe %d", num_id);
         printf("%d %d\n%s\n", num_id, num_tax, name);
+    #endif
+
+    // Check the data is good
+    if (num_id <=0 || num_tax <= 0 || name[0] == '\0')
+    {
+        printf("Dados invalidos.\n");
+        return;
     }
 
     // Add the client to the pavilion
@@ -129,11 +136,20 @@ void docommand_E(pavilion p, char* command)
 void docommand_F(pavilion p, char* command)
 {
     // Variables
-    int num_id;
+    int num_id=0;
     client c;
 
     // Read the command and check if the client is valid
-    sscanf(command, "F %d", &num_id);
+    if (sscanf(command, "F %d", &num_id) != 1)
+    {
+        printf("Visitante nao esta no pavilhao.\n");
+        return;
+    }
+    if (num_id <= 0)
+    {
+        printf("Visitante nao esta no pavilhao.\n");
+        return;
+    }
     if (pavilion_exists_client(p, num_id) == FALSE)
     {
         printf("Visitante nao esta no pavilhao.\n");
@@ -167,17 +183,29 @@ void docommand_L(pavilion p, char* command)
     int ret;
 
     // Read the command and check if the client is valid
-    if (!DEBUG_MODE)
-        sscanf(command, "L %d:%d", &hours, &minutes);
-    else
-    {
+    #if !DEBUG_MODE
+        if (sscanf(command, "L %d:%d", &hours, &minutes) != 2)
+        {
+            printf("Dados invalidos.\n");
+            return;
+        }
+    #else
         hours = 9;
         minutes = 0;
         printf("9:00\n");
-    }
+    #endif
 
+    // Check the data is good
+    if (hours >= 24 || minutes >= 60)
+    {
+        printf("Dados invalidos.\n");
+        return;
+    }        
+
+    // Calculate the time (in minutes)
     timeminutes = hours*60 + minutes;
 
+    // Move the client
     ret = pavilion_move_client(p, timeminutes, LOCATION_TRAMPOLINE);
     if (ret == 0)
         printf("Fila vazia.\n");
@@ -201,10 +229,14 @@ void docommand_T(pavilion p, char* command)
     int ret;
 
     // Read the command and check if the client is valid
-    sscanf(command, "T %d", &index);
+    if (sscanf(command, "T %d", &index) != 1)
+    {
+        printf("Dados invalidos.\n");
+        return;
+    }
 
+    // Get the info
     ret = pavilion_get_trampoline_clientid(p, index);
-
     if (ret == TRAMPOLINE_EMPTY)
         printf("Trampolim vazio.\n");
     else if (ret == TRAMPOLINE_NULL)
@@ -222,22 +254,34 @@ void docommand_T(pavilion p, char* command)
 void docommand_S(pavilion p, char* command)
 {
     // Variables
-    int num_id;
+    int num_id=0;
     int hours;
     int minutes;
     int timeminutes;
 
     // Read the command and check if the client is valid
-    if (!DEBUG_MODE)
-        sscanf(command, "S %d %d:%d", &num_id, &hours, &minutes);
-    else
-    {
+    #if !DEBUG_MODE
+        if (sscanf(command, "S %d %d:%d", &num_id, &hours, &minutes) != 3)
+        {
+            printf("Dados invalidos.\n");
+            return;
+        }        
+
+    #else
+        sscanf(command, "S %d", &num_id);
         hours = 10;
         minutes = 30;
         printf("10:30\n");
+    #endif
+
+    // Check the data given is valid
+    if (num_id <= 0)
+    {
+        printf("Dados invalidos.\n");
+        return;
     }
 
-    timeminutes = hours*60 + minutes;
+    // Check the client exists
     if (pavilion_exists_client(p, num_id) == FALSE)
     {
         printf("Visitante nao esta no pavilhao.\n");
@@ -245,12 +289,15 @@ void docommand_S(pavilion p, char* command)
     }
     client c = pavilion_get_client(p, num_id);
 
+    // Calculate the time and make sure it makes sense
+    timeminutes = hours*60 + minutes;
     if (client_get_time(c) >= timeminutes)
     {
         printf("Hora errada.\n");
         return;
     }
 
+    // Move the client
     int ret = pavilion_move_client(p, num_id, LOCATION_BAR);
     if (ret == TRAMPOLINE_NULL)
         printf("Saida trampolim nao autorizada.\n");
@@ -275,9 +322,26 @@ void docommand_V(pavilion p, char* command)
     char item[2];
     client c;
 
-    // Read the command
-    sscanf(command, "V %s %d %d", item, &amount, &num_id);
+    // Read the command and make sure it's valid
+    if (sscanf(command, "V %s %d %d", item, &amount, &num_id) != 3)
+    {
+        printf("Dados invalidos.\n");
+        return;
+    }
+    if (amount <= 0 || num_id <=0)
+    {
+        printf("Dados invalidos.\n");
+        return;
+    }
+
+    // Make sure we have a good variable read.
     item[0] = toupper(item[0]);
+    item[1] = '\0';
+    if (!pavilion_exists_food(p, item))
+    {
+        printf("Dados invalidos.\n");
+        return;
+    }
 
     // Make sure the client is valid
     if (pavilion_exists_client(p, num_id) == FALSE)
@@ -290,7 +354,7 @@ void docommand_V(pavilion p, char* command)
     // Make sure that we can purchase the food, and if so make the purchase
     if (client_get_location(c) != LOCATION_BAR)
         printf("Venda nao autorizada.\n");
-    else if (pavilion_exists_food(p, item) == FALSE || food_get_stock(pavilion_get_food(p, item)) < amount)
+    else if (food_get_stock(pavilion_get_food(p, item)) < amount)
         printf("Produto %s esgotado.\n", item);
     else
     {
@@ -315,7 +379,12 @@ void docommand_Q(pavilion p, char* command)
     client c;
 
     // Read the command and check if the client is valid
-    sscanf(command, "Q %d", &num_id);
+    if (sscanf(command, "Q %d", &num_id) != 1)
+    {
+        printf("Dados invalidos.\n");
+        return;
+    }        
+
     if (pavilion_exists_client(p, num_id) == FALSE)
     {
         printf("Visitante nao esta no pavilhao.\n");
@@ -323,6 +392,7 @@ void docommand_Q(pavilion p, char* command)
     }
     c = pavilion_get_client(p, num_id);
 
+    // Remove him from the pavilion
     if (client_get_location(c) != LOCATION_BAR)
         printf("Saida nao autorizada.\n");
     else
@@ -394,8 +464,12 @@ void docommand_P(pavilion p)
 void docommand_X(pavilion p)
 {
     int i;
+
+    // Kick everyone out of the trampolines and pavilion, then print the money
     pavilion_close(p);
     printf("Caixa: %.2f euros.\n", pavilion_get_cash(p));
+
+    // Go through all the food and print their stocks
     for (i=0;i<NUM_FOOD;i++)
     {
         char* key = food_get_key_from_index(i);
