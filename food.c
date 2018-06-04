@@ -4,12 +4,18 @@
 #include "configuration.h"
 #include "food.h"
 
+
+/*===================================
+           Global Variables
+===================================*/
+
 struct _food
 {
     int     stock;
     float   price;
     char*   name;
 };
+
 
 /*===================================
              food_create
