@@ -17,6 +17,7 @@
     #include <time.h>
 #endif
 
+
 /*===================================
            Global Variables
 ===================================*/
@@ -82,8 +83,7 @@ pavilion pavilion_create()
 
     // Set default values and request trampoline number and bar stock+price
     p->cash = 0.0;
-    if (!DEBUG_MODE)
-    {
+    #if !DEBUG_MODE
         scanf("%d", &(p->num_trampolines));
 
         for (i=0;i<NUM_FOOD;i++)
@@ -94,9 +94,7 @@ pavilion pavilion_create()
             if (pavilion_add_food(p, i, stock, price) == FAILURE)
                 return NULL;
         }
-    }
-    else
-    {
+    #else
         p->num_trampolines = 1+(rand()%19);
         printf("%d\n", p->num_trampolines);
 
@@ -108,7 +106,7 @@ pavilion pavilion_create()
             if (pavilion_add_food(p, i, stock, price) == FAILURE)
                 return NULL;
         }
-    }
+    #endif
 
 
     // Create a sequence of trampolines and fill it up with an empty trampoline struct
@@ -153,15 +151,20 @@ void pavilion_destroy(pavilion p)
 
 void pavilion_close(pavilion p)
 {
+    // Go through all the clients
     iterador it = iteradorDicionario(p->clients);
     while (temSeguinteIterador(it))
     {
         client c = seguinteIterador(it);
+
+        // If they're at a trampoline, assume they leave at midnight
         if (client_get_location(c) == LOCATION_TRAMPOLINE)
         {
             client_set_time(c, 1440 - client_get_time(c));
             pavilion_set_cash(p, pavilion_get_cash(p) + client_get_bill(c) + ((1+max(ceil(client_get_time(c), 30)-1,0))*5));
         }
+        else if (client_get_bill(c) == 0)
+            pavilion_set_cash(p, pavilion_get_cash(p) + 5);
         else
             pavilion_set_cash(p, pavilion_get_cash(p) + client_get_bill(c));
     }
@@ -315,12 +318,14 @@ void pavilion_sort_clients(pavilion p, char temp_name[MAX_CLIENTS][MAX_INPUT], i
     void pavilion_printdebug(pavilion p)
     {
         int i=0;
- 
+        
+        // Print the queue size
         if (vaziaFila(p->queue) == TRUE)
             printf("\x1b[31m Queue Empty \x1b[0m\n");
         else
             printf("\x1b[31m Queue Size %d \x1b[0m\n", tamanhoFila(p->queue));
 
+        // Print each trampoline and its user.
         iterador it = iteradorSequencia(p->trampolines);
         while (temSeguinteIterador(it))
         {
@@ -362,24 +367,34 @@ int pavilion_move_client(pavilion p, int helper, char location)
     }
     else if (location == LOCATION_TRAMPOLINE)
     {
+        // Variables
+        int sizebefore = tamanhoFila(p->queue);
         iterador it = iteradorSequencia(p->trampolines);
+
+        // Keep looping until we reach the last trampoline
         while (temSeguinteIterador(it))
         {
             trampoline t = seguinteIterador(it);
-            if (!trampoline_empty(t) && !temSeguinteIterador(it))
-                return TRAMPOLINE_EMPTY;
+            if (!trampoline_empty(t) && !temSeguinteIterador(it) && tamanhoFila(p->queue) == sizebefore)
+                return TRAMPOLINE_BUSY;
             else if (trampoline_empty(t))
             {
+                // Keep iterating through trampolines without increasing i if the line is empty
                 if (vaziaFila(p->queue))
                     continue;
 
+                // Remove the first person in the queue (and make sure we did)
                 slot s = removeElemFila(p->queue);
                 if (s == NULL)
                 {
                     destroiIterador(it);
                     return TRAMPOLINE_BUSY;
                 }
+
+                // Increment the number of people we moved
                 i++;
+
+                // Update all necissary info regarding the client
                 client c = slot_get_client(s);
                 trampoline_set_client(t, c, slot_get_id(s));
                 client_set_location(c, location);
@@ -387,22 +402,33 @@ int pavilion_move_client(pavilion p, int helper, char location)
             }
         }
         destroiIterador(it);
+        return i;
     }
     else if (location == LOCATION_BAR)
     {
         iterador it = iteradorSequencia(p->trampolines);
+
+        // Iterate through all the trampolines
         while (temSeguinteIterador(it))
         {
             trampoline t = seguinteIterador(it);
+
+            // If we found a trampoline with the ID we want
             if (trampoline_get_id(t) == helper)
             {
+                // Update all necissary info regarding the client
                 trampoline_remove_client(t);
                 client c = pavilion_get_client(p, helper);
                 client_set_location(c, LOCATION_BAR);
                 destroiIterador(it);
+
+                #if DEBUG_MODE
+                    pavilion_printdebug(p);
+                #endif
                 return SUCCESS;
             }
         }
+        // There was no trampoline with the person we wanted
         destroiIterador(it);
         return TRAMPOLINE_NULL;
     }
@@ -482,9 +508,12 @@ int pavilion_get_trampoline_clientid(pavilion p, int index)
 {
     int i=1;
     iterador it = iteradorSequencia(p->trampolines);
+
+    // Iterate through all trampolines until we find the requested number
     while (temSeguinteIterador(it))
     {
         trampoline t = seguinteIterador(it);
+        // if it's the trampoline number requested, return its status
         if (i == index)
         {
             destroiIterador(it);
@@ -495,16 +524,25 @@ int pavilion_get_trampoline_clientid(pavilion p, int index)
         }
         i++;
     }
+
+    // If there was no trampoline with the number requested, return that we failed
     destroiIterador(it);
     return TRAMPOLINE_NULL;
 }
 
 
+/*===================================
+      pavilion_find_trampoline
+ Return the number of the trampoline
+ that has a specific person using it
+===================================*/
 
 int pavilion_find_trampoline(pavilion p, int num_id)
 {
     int i=1;
     iterador it = iteradorSequencia(p->trampolines);
+
+    // Iterate through all the trampolines
     while (temSeguinteIterador(it))
     {
         trampoline t = seguinteIterador(it);
@@ -516,7 +554,7 @@ int pavilion_find_trampoline(pavilion p, int num_id)
         i++;
     }
 
-    // This shouldn't happen... But just in case!
+    // This shouldn't happen (as the person is checked before), but just in case!
     destroiIterador(it);
     return TRAMPOLINE_NULL;
 }
