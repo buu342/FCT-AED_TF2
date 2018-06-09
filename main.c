@@ -26,7 +26,7 @@ void docommand_V(pavilion p, char* command);
 void docommand_Q(pavilion p, char* command);
 void docommand_C(pavilion p);
 void docommand_P(pavilion p);
-void docommand_X(pavilion p); // Afterwards test, submit and, once working, comment properly.
+void docommand_X(pavilion p);
 
 
 /*===================================
